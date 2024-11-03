@@ -1,6 +1,7 @@
 package com.rasimalimgulov.plannerusers.controller;
 
 import com.rasimalimgulov.plannerentity.entity.User;
+import com.rasimalimgulov.plannerusers.rabbit.MessageProducer;
 import com.rasimalimgulov.plannerusers.search.UserSearchValues;
 import com.rasimalimgulov.plannerusers.service.UserService;
 import com.rasimalimgulov.plannerutils.webclient.UserWebClientBuilder;
@@ -20,9 +21,11 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/user")
 public class UserController {
+    private final MessageProducer messageProducer;
     private final UserService userService;
     private final UserWebClientBuilder userWebClientBuilder;
-    public UserController(UserService userService, UserWebClientBuilder clientBuilder) {
+    public UserController(MessageProducer messageProducer, UserService userService, UserWebClientBuilder clientBuilder) {
+        this.messageProducer = messageProducer;
         this.userService = userService;
         this.userWebClientBuilder = clientBuilder;
     }
@@ -42,10 +45,11 @@ public class UserController {
             return new ResponseEntity("missed param: username", HttpStatus.NOT_ACCEPTABLE);
         }
         User user1=userService.addUser(user);
-        if (user1!=null){
-            userWebClientBuilder.initUserData(user.getId()).subscribe((x)-> System.out.println("Тестовые данные добавлены: "+x));
-        }
-        System.out.println("Этот код выполняется после subscribe на ответ запроса");
+//        if (user1!=null){
+//            userWebClientBuilder.initUserData(user.getId()).subscribe((x)-> System.out.println("Тестовые данные добавлены: "+x));
+//        }
+//        System.out.println("Этот код выполняется после subscribe на ответ запроса");
+        messageProducer.sendMessage(user1.getId());
         return new ResponseEntity(user1, HttpStatus.CREATED);
     }
 
