@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -24,10 +25,12 @@ public class UserController {
     private final MessageProducer messageProducer;
     private final UserService userService;
     private final UserWebClientBuilder userWebClientBuilder;
-    public UserController(MessageProducer messageProducer, UserService userService, UserWebClientBuilder clientBuilder) {
+    private final KafkaTemplate<String,Long> kafkaTemplate;
+    public UserController(MessageProducer messageProducer, UserService userService, UserWebClientBuilder clientBuilder, KafkaTemplate<String, Long> kafkaTemplate) {
         this.messageProducer = messageProducer;
         this.userService = userService;
         this.userWebClientBuilder = clientBuilder;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     @PostMapping("/add")
@@ -49,7 +52,11 @@ public class UserController {
 //            userWebClientBuilder.initUserData(user.getId()).subscribe((x)-> System.out.println("Тестовые данные добавлены: "+x));
 //        }
 //        System.out.println("Этот код выполняется после subscribe на ответ запроса");
-        messageProducer.sendMessage(user1.getId());
+       if (user1!=null){
+           messageProducer.sendMessage(user1.getId());
+           kafkaTemplate.send("myTopicExample", user1.getId());
+       }
+
         return new ResponseEntity(user1, HttpStatus.CREATED);
     }
 

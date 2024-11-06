@@ -11,7 +11,11 @@ import reactor.core.publisher.Sinks;
 @Getter
 public class MessageProducer {
 
-    private RabbitChannels rabbitChannels;
+    private final RabbitChannels rabbitChannels;
+
+    public MessageProducer(RabbitChannels rabbitChannels) {
+        this.rabbitChannels = rabbitChannels;
+    }
 
     public void sendMessage(Long id){
         rabbitChannels.getInnerBus().emitNext(MessageBuilder.withPayload(id).build(), Sinks.EmitFailureHandler.FAIL_FAST);
