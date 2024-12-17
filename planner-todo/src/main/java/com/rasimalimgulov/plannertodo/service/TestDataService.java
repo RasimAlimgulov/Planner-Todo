@@ -19,7 +19,7 @@ public class TestDataService {
         this.priorityService = priorityService;
         this.categoryService = categoryService;
     }
-    public void initTestData(Long userId){
+    public void initTestData(String userId){
 
         Priority priority1 = new Priority();
         priority1.setUserId(userId);

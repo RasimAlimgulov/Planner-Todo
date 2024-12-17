@@ -16,7 +16,7 @@ public class PriorityService {
         this.repository = repository;
     }
 
-    public List<Priority> findAll(Long userId) {
+    public List<Priority> findAll(String userId) {
         return repository.findByUserIdOrderByIdAsc(userId);
     }
 
@@ -36,7 +36,7 @@ public class PriorityService {
         return repository.findById(id).get(); // т.к. возвращается Optional - можно получить объект методом get()
     }
 
-    public List<Priority> find(String title, Long userId) {
+    public List<Priority> find(String title, String userId) {
         return repository.findByTitle(title, userId);
     }
 

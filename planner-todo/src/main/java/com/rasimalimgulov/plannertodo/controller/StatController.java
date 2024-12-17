@@ -19,7 +19,7 @@ public class StatController {
 
 
     @PostMapping("/stat")
-    public ResponseEntity<Stat> findByUserId(@RequestBody Long userId) {
+    public ResponseEntity<Stat> findByUserId(@RequestBody String  userId) {
         return ResponseEntity.ok(statService.findStat(userId));
     }
 

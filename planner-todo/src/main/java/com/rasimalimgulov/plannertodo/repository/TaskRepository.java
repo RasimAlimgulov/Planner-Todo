@@ -33,7 +33,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
                             @Param("completed") Boolean completed,
                             @Param("priorityId") Long priorityId,
                             @Param("categoryId") Long categoryId,
-                            @Param("userId") Long userId,
+                            @Param("userId") String userId,
                             @Param("dateFrom") Date dateFrom,
                             @Param("dateTo") Date dateTo,
                             Pageable pageable
@@ -41,7 +41,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
 
     // поиск всех задач конкретного пользователя
-    List<Task> findByUserIdOrderByTitleAsc(Long id);
+    List<Task> findByUserIdOrderByTitleAsc(String userId);
 
 
 }

@@ -12,13 +12,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 
 
 @RestController
@@ -39,29 +41,33 @@ public class TaskController {
 
     // получение всех данных
     @PostMapping("/all")
-    public ResponseEntity<List<Task>> findAll(@RequestBody Long userId) {
+    public ResponseEntity<List<Task>> findAll(@RequestBody String userId) {
         return ResponseEntity.ok(taskService.findAll(userId)); // поиск всех задач конкретного пользователя
     }
 
     // добавление
     @PostMapping("/add")
-    public ResponseEntity<Task> add(@RequestBody Task task) {
-
+    public ResponseEntity<Task> add(@RequestBody Task task, @AuthenticationPrincipal Jwt jwt) {
+        task.setUserId(jwt.getSubject());
         // проверка на обязательные параметры
         if (task.getId() != null && task.getId() != 0) {
             // id создается автоматически в БД (autoincrement), поэтому его передавать не нужно, иначе может быть конфликт уникальности значения
-            return new ResponseEntity("redundant param: id MUST be null", HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity("redundant param: userid MUST be null", HttpStatus.NOT_ACCEPTABLE);
         }
 
         // если передали пустое значение title
         if (task.getTitle() == null || task.getTitle().trim().length() == 0) {
             return new ResponseEntity("missed param: title", HttpStatus.NOT_ACCEPTABLE);
         }
-        if (userBuilder.userExists(task.getUserId())){
+        //        if (userBuilder.userExists(task.getUserId())){
+//            return ResponseEntity.ok(taskService.add(task));// возвращаем добавленный объект с заполненным ID
+//        }
+        if (!task.getUserId().isBlank()) {
             return ResponseEntity.ok(taskService.add(task));// возвращаем добавленный объект с заполненным ID
         }
 
-        return new ResponseEntity("id="+task.getUserId()+" not found.",HttpStatus.NOT_FOUND);
+
+        return new ResponseEntity("id=" + task.getUserId() + " not found.", HttpStatus.NOT_FOUND);
     }
 
 
@@ -122,8 +128,8 @@ public class TaskController {
 
     // поиск по любым параметрам TaskSearchValues
     @PostMapping("/search")
-    public ResponseEntity<Page<Task>> search(@RequestBody TaskSearchValues taskSearchValues) throws ParseException {
-
+    public ResponseEntity<Page<Task>> search(@RequestBody TaskSearchValues taskSearchValues,@AuthenticationPrincipal Jwt jwt) throws ParseException {
+        taskSearchValues.setUserId(jwt.getSubject());
         // исключить NullPointerException
         String title = taskSearchValues.getTitle() != null ? taskSearchValues.getTitle() : null;
 
@@ -139,12 +145,12 @@ public class TaskController {
         Integer pageNumber = taskSearchValues.getPageNumber() != null ? taskSearchValues.getPageNumber() : null;
         Integer pageSize = taskSearchValues.getPageSize() != null ? taskSearchValues.getPageSize() : null;
 
-        Long userId = taskSearchValues.getUserId() != null ? taskSearchValues.getUserId() : null; // для показа задач только этого пользователя
-
-        // проверка на обязательные параметры
-        if (userId == null || userId == 0) {
-            return new ResponseEntity("missed param: email", HttpStatus.NOT_ACCEPTABLE);
-        }
+//        String userId = taskSearchValues.getUserId() != null ? taskSearchValues.getUserId() : null; // для показа задач только этого пользователя
+          String userId=taskSearchValues.getUserId();
+//        // проверка на обязательные параметры
+//        if (userId.isBlank()) {
+//            return new ResponseEntity("missed param: email", HttpStatus.NOT_ACCEPTABLE);
+//        }
 
 
         // чтобы захватить в выборке все задачи по датам, независимо от времени - можно выставить время с 00:00 до 23:59
@@ -204,7 +210,6 @@ public class TaskController {
         return ResponseEntity.ok(result);
 
     }
-
 
 
 }

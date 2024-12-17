@@ -9,6 +9,8 @@ import com.rasimalimgulov.plannerutils.webclient.UserWebClientBuilder;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,18 +41,18 @@ public class PriorityController {
 
 
     @PostMapping("/all")
-    public List<Priority> findAll(@RequestBody Long userId) {
+    public List<Priority> findAll(@RequestBody String userId) {
         return priorityService.findAll(userId);
     }
 
 
     @PostMapping("/add")
-    public ResponseEntity<Priority> add(@RequestBody Priority priority) {
-
+    public ResponseEntity<Priority> add(@RequestBody Priority priority, @AuthenticationPrincipal Jwt jwt) {
+        priority.setUserId(jwt.getSubject());
         // проверка на обязательные параметры
         if (priority.getId() != null && priority.getId() != 0) {
             // id создается автоматически в БД (autoincrement), поэтому его передавать не нужно, иначе может быть конфликт уникальности значения
-            return new ResponseEntity("redundant param: id MUST be null", HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity("redundant param: priority id MUST be null", HttpStatus.NOT_ACCEPTABLE);
         }
 
         // если передали пустое значение title
@@ -62,11 +64,14 @@ public class PriorityController {
         if (priority.getColor() == null || priority.getColor().trim().length() == 0) {
             return new ResponseEntity("missed param: color", HttpStatus.NOT_ACCEPTABLE);
         }
-        if (userBuilder.userExists(priority.getUserId())){
+//        if (userBuilder.userExists(priority.getUserId())){
+//            return ResponseEntity.ok(priorityService.add(priority));// возвращаем добавленный объект с заполненным ID
+//        }
+        if (!priority.getUserId().isBlank()){
             return ResponseEntity.ok(priorityService.add(priority));// возвращаем добавленный объект с заполненным ID
         }
 
-        return new ResponseEntity("id="+priority.getUserId()+" not found.",HttpStatus.NOT_FOUND);
+        return new ResponseEntity("user id="+priority.getUserId()+" not found.",HttpStatus.NOT_FOUND);
     }
 
 
@@ -135,10 +140,10 @@ public class PriorityController {
 
     // поиск по любым параметрам PrioritySearchValues
     @PostMapping("/search")
-    public ResponseEntity<List<Priority>> search(@RequestBody PrioritySearchValues prioritySearchValues) {
-
+    public ResponseEntity<List<Priority>> search(@RequestBody PrioritySearchValues prioritySearchValues,@AuthenticationPrincipal Jwt jwt) {
+        prioritySearchValues.setUserId(jwt.getSubject());
         // проверка на обязательные параметры
-        if (prioritySearchValues.getUserId() == null || prioritySearchValues.getUserId() == 0) {
+        if (prioritySearchValues.getUserId().isBlank()) {
             return new ResponseEntity("missed param: userId", HttpStatus.NOT_ACCEPTABLE);
         }
 

@@ -21,7 +21,7 @@ public class TaskService {
     }
 
     @Cacheable(cacheNames = "tasks")
-    public List<Task> findAll(Long userId) {
+    public List<Task> findAll(String userId) {
         return repository.findByUserIdOrderByTitleAsc(userId);
     }
 
@@ -38,7 +38,7 @@ public class TaskService {
     }
 
     @Cacheable(cacheNames = "tasks")
-    public Page<Task> findByParams(String text, Boolean completed, Long priorityId, Long categoryId, Long userId, Date dateFrom, Date dateTo, PageRequest paging) {
+    public Page<Task> findByParams(String text, Boolean completed, Long priorityId, Long categoryId, String userId, Date dateFrom, Date dateTo, PageRequest paging) {
         return repository.findByParams(text, completed, priorityId, categoryId, userId, dateFrom, dateTo, paging);
     }
 

@@ -18,7 +18,7 @@ public class RabbitConsumer {
     }
 
     @Bean
-    public Consumer<Message<Long>> newUserActionConsume() {
+    public Consumer<Message<String>> newUserActionConsume() {
         return message -> testDataService.initTestData(message.getPayload());
     }
 }

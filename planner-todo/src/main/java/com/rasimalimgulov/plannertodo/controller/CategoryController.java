@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,64 +40,68 @@ public class CategoryController {
     // доступ к данным из БД
     private final CategoryService categoryService;
     private final UserWebClientBuilder userRestBuilder;
-    private final UserFeignClient userFeignClient;
+    //private final UserFeignClient userFeignClient;
 
     // используем автоматическое внедрение экземпляра класса через конструктор
     // не используем @Autowired ля переменной класса, т.к. "Field injection is not recommended "
-    public CategoryController(CategoryService categoryService, UserWebClientBuilder userRestBuilder,UserFeignClient userFeignClient) {
+    public CategoryController(CategoryService categoryService, UserWebClientBuilder userRestBuilder) {
         this.categoryService = categoryService;
         this.userRestBuilder = userRestBuilder;
-        this.userFeignClient = userFeignClient;
     }
 
     @PostMapping("/all")
-    public List<Category> findAll(@RequestBody Long userId) {
+    public List<Category> findAll(@RequestBody String userId) {
         return categoryService.findAll(userId);
     }
 
 
     @PostMapping("/add")
-    public ResponseEntity<Category> add(@RequestBody Category category) {
+    public ResponseEntity<Category> add(@RequestBody Category category, @AuthenticationPrincipal Jwt jwt) {
+
+           category.setUserId(jwt.getSubject()); ///UUID пользователя KEyCloak
 
         // проверка на обязательные параметры
         if (category.getId() != null && category.getId() != 0) { // это означает, что id заполнено
             // id создается автоматически в БД (autoincrement), поэтому его передавать не нужно, иначе может быть конфликт уникальности значения
-            return new ResponseEntity("redundant param: id MUST be null", HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity("redundant param: category id MUST be null", HttpStatus.NOT_ACCEPTABLE);
         }
 
         // если передали пустое значение title
         if (category.getTitle() == null || category.getTitle().trim().length() == 0) {
             return new ResponseEntity("missed param: title MUST be not null", HttpStatus.NOT_ACCEPTABLE);
         }
-//         проверяем есть ли такой user в user-service
+
+        //         проверяем есть ли такой user в user-service
 //        if (userRestBuilder.userExists(category.getUserId())){
 //            return ResponseEntity.ok(categoryService.add(category));// возвращаем добавленный объект с заполненным ID
 //        }
 //        userRestBuilder.userExistAsc(category.getUserId()).subscribe((user)-> System.out.println("User = "+user));
+//        try {
+//            ResponseEntity<User> response = userFeignClient.findUserById(category.getUserId());
+//            log.info("Метод в контроллере получил статус " + response.getStatusCode());
+//            // Проверка на статус SERVICE_UNAVAILABLE (сервис недоступен)
+//            if (response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
+//                log.info("Выполняется условие response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE");
+//                return new ResponseEntity("Система пользователей не доступна, попробуйте позже.", HttpStatus.SERVICE_UNAVAILABLE);
+//            }
+//            // Если пользователь не найден
+//            if (response.getStatusCode() == HttpStatus.NOT_FOUND || response.getBody() == null) {
+//                log.info("Пользователь не найден");
+//                return new ResponseEntity("id = " + category.getUserId() + " not found.", HttpStatus.NOT_FOUND);
+//            }
+//            // Если пользователь найден, добавляем категорию
+//            return new ResponseEntity(categoryService.add(category), HttpStatus.CREATED);
+//        } catch (Exception e) {
+//            log.warn("Произошла ошибка: " + e.getMessage());
+//            return new ResponseEntity("Произошла ошибка при обработке запроса.", HttpStatus.INTERNAL_SERVER_ERROR);
+//
+        /// данные о пользователе не нужно проверять и делать запрос в userService
 
-        try {
-            ResponseEntity<User> response = userFeignClient.findUserById(category.getUserId());
-            log.info("Метод в контроллере получил статус " + response.getStatusCode());
-
-            // Проверка на статус SERVICE_UNAVAILABLE (сервис недоступен)
-            if (response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
-                log.info("Выполняется условие response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE");
-                return new ResponseEntity("Система пользователей не доступна, попробуйте позже.", HttpStatus.SERVICE_UNAVAILABLE);
-            }
-
-            // Если пользователь не найден
-            if (response.getStatusCode() == HttpStatus.NOT_FOUND || response.getBody() == null) {
-                log.info("Пользователь не найден");
-                return new ResponseEntity("id = " + category.getUserId() + " not found.", HttpStatus.NOT_FOUND);
-            }
-
-            // Если пользователь найден, добавляем категорию
-            return new ResponseEntity(categoryService.add(category), HttpStatus.CREATED);
-
-        } catch (Exception e) {
-            log.warn("Произошла ошибка: " + e.getMessage());
-            return new ResponseEntity("Произошла ошибка при обработке запроса.", HttpStatus.INTERNAL_SERVER_ERROR);
+        if (!category.getUserId().isBlank()){
+            return ResponseEntity.ok(categoryService.add(category));
         }
+        //Если не передали userId
+          return new ResponseEntity("user id = " + category.getUserId() + " not found.",HttpStatus.NOT_FOUND);
     }
 
 
@@ -139,10 +145,10 @@ public class CategoryController {
 
     // поиск по любым параметрам CategorySearchValues
     @PostMapping("/search")
-    public ResponseEntity<List<Category>> search(@RequestBody CategorySearchValues categorySearchValues) {
-
+    public ResponseEntity<List<Category>> search(@RequestBody CategorySearchValues categorySearchValues,@AuthenticationPrincipal Jwt jwt) {
+        categorySearchValues.setUserId(jwt.getSubject());
         // проверка на обязательные параметры
-        if (categorySearchValues.getUserId() == null || categorySearchValues.getUserId() == 0) {
+        if (categorySearchValues.getUserId().isBlank()) {
             return new ResponseEntity("missed param: userId", HttpStatus.NOT_ACCEPTABLE);
         }
 

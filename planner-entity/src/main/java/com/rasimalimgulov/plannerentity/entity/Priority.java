@@ -43,7 +43,7 @@ public class Priority implements Serializable {
 //    @JoinColumn(name = "user_id", referencedColumnName = "id") // по каким полям связывать (foreign key)
 //    private User user;
     @Column(name = "user_id")
-    private Long userId;
+    private String userId;
 
     @Override
     public boolean equals(Object o) {

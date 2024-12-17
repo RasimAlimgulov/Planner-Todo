@@ -43,7 +43,7 @@ public class Category implements Serializable {
 //    @JoinColumn(name = "user_id", referencedColumnName = "id") // по каким полям связаны эти 2 объекта (foreign key)
 //    private User user;
     @Column(name = "user_id")
-    private Long userId;
+    private String userId;
 
 
     @Override
